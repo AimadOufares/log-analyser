@@ -1,67 +1,97 @@
 #!/usr/bin/env python3
-# log_analyzer.py
+# log_analyzer.py - Analyseur de logs avec sortie colorée et statistiques avancées
 
 import argparse
 from collections import defaultdict
-from colorama import init, Fore
+from colorama import init, Fore, Style
+from datetime import datetime
+import sys
 
-# Initialisation de colorama pour les couleurs dans le terminal
-init()
+# Initialisation de colorama
+init(autoreset=True)
+
+def setup_logger():
+    """Configure le format des logs"""
+    def log(message, level="INFO"):
+        levels = {
+            "INFO": Fore.CYAN,
+            "WARNING": Fore.YELLOW,
+            "ERROR": Fore.RED,
+            "SUCCESS": Fore.GREEN
+        }
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"{levels[level]}[{timestamp}] {message}{Style.RESET_ALL}")
+    
+    return log
+
+log = setup_logger()
 
 def analyze_logs(input_file='log.txt', output_file='rapport.txt'):
     """
-    Analyse un fichier log et génère un rapport avec les statistiques.
+    Analyse un fichier log et génère un rapport détaillé.
     
     Args:
-        input_file (str): Chemin vers le fichier log à analyser
-        output_file (str): Chemin vers le fichier de sortie
+        input_file (str): Chemin du fichier log
+        output_file (str): Chemin du fichier de sortie
     """
-    log_counts = defaultdict(int)
-    total_lines = 0
+    stats = {
+        "levels": defaultdict(int),
+        "total_lines": 0,
+        "start_time": datetime.now()
+    }
 
     try:
+        log(f"Début de l'analyse du fichier: {input_file}", "INFO")
+        
         with open(input_file, 'r') as f:
             for line in f:
-                total_lines += 1
+                stats["total_lines"] += 1
                 line = line.strip().upper()
+                
                 if 'ERROR' in line:
-                    log_counts['ERROR'] += 1
+                    stats["levels"]['ERROR'] += 1
                 elif 'WARNING' in line:
-                    log_counts['WARNING'] += 1
+                    stats["levels"]['WARNING'] += 1
                 elif 'INFO' in line:
-                    log_counts['INFO'] += 1
+                    stats["levels"]['INFO'] += 1
                 else:
-                    log_counts['OTHER'] += 1
+                    stats["levels"]['OTHER'] += 1
 
+        # Calcul du temps d'exécution
+        stats["execution_time"] = (datetime.now() - stats["start_time"]).total_seconds()
+        
         # Génération du rapport
         with open(output_file, 'w') as f:
-            f.write(f"Rapport d'analyse du fichier {input_file}\n")
+            f.write(f"Rapport d'analyse - {datetime.now()}\n")
             f.write("="*40 + "\n")
-            f.write(f"Total de lignes analysées: {total_lines}\n")
-            f.write(f"ERROR: {log_counts['ERROR']}\n")
-            f.write(f"WARNING: {log_counts['WARNING']}\n")
-            f.write(f"INFO: {log_counts['INFO']}\n")
-            f.write(f"OTHER: {log_counts['OTHER']}\n")
+            f.write(f"Fichier analysé: {input_file}\n")
+            f.write(f"Lignes traitées: {stats['total_lines']}\n")
+            f.write("\nNiveaux de log:\n")
+            for level, count in stats['levels'].items():
+                f.write(f"- {level}: {count}\n")
+            f.write(f"\nTemps d'exécution: {stats['execution_time']:.2f}s\n")
 
-        # Affichage coloré dans le terminal
-        print(Fore.RED + f"ERRORS: {log_counts['ERROR']}" + Fore.RESET)
-        print(Fore.YELLOW + f"WARNINGS: {log_counts['WARNING']}" + Fore.RESET)
-        print(Fore.GREEN + f"INFOS: {log_counts['INFO']}" + Fore.RESET)
-        print(f"Autres lignes: {log_counts['OTHER']}")
-        print(Fore.CYAN + f"Rapport généré dans {output_file}" + Fore.RESET)
+        log(f"Rapport généré avec succès: {output_file}", "SUCCESS")
+        log(f"Statistiques: {stats['levels']}", "INFO")
+        
+        return True
 
     except FileNotFoundError:
-        print(Fore.RED + f"Erreur: Le fichier {input_file} n'existe pas." + Fore.RESET)
+        log(f"Erreur: Fichier introuvable - {input_file}", "ERROR")
+        return False
+    except Exception as e:
+        log(f"Erreur inattendue: {str(e)}", "ERROR")
         return False
 
-    return True
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Analyseur de fichiers logs')
+    parser = argparse.ArgumentParser(
+        description="Analyseur de logs avec génération de rapports",
+        epilog="Exemple: python log_analyzer.py --input serveur.log --output analyse.txt"
+    )
     parser.add_argument('--input', default='log.txt', help='Fichier log à analyser')
     parser.add_argument('--output', default='rapport.txt', help='Fichier de sortie')
     
     args = parser.parse_args()
     
-    print(Fore.BLUE + f"\nDébut de l'analyse du fichier {args.input}..." + Fore.RESET)
-    analyze_logs(args.input, args.output)
+    success = analyze_logs(args.input, args.output)
+    sys.exit(0 if success else 1)
