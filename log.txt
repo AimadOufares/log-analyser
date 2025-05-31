@@ -1,0 +1,7 @@
+INFO: Application démarrée
+ERROR: Échec de la connexion à la base de données
+WARNING: Utilisation élevée de la mémoire
+INFO: Nouvel utilisateur enregistré
+ERROR: Fichier non trouvé
+INFO: Sauvegarde effectuée
+WARNING: Temps de réponse lent

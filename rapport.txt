@@ -1,0 +1,7 @@
+Rapport d'analyse du fichier log.txt
+========================================
+Total de lignes analysées: 7
+ERROR: 2
+WARNING: 2
+INFO: 3
+OTHER: 0
